@@ -1,9 +1,7 @@
 ### These functions create various WQ plots for monthly discrete data collected by NETN.
 ### A Weed 8/25/2016
 
-
 ### Still need to add in Discharge and add in site metadata for plotting and to aggregate at park scale
-
 
 ## imports a df
 
@@ -18,21 +16,24 @@
 #  $ SpCond      : int  25 27 23 29 28 33 27 30 38 26 ...
 #  $ Temp_C      : num  17.4 22.9 22.6 20 16.8 ...
 
-
 ###### plots a single WQ parmeter per month showing historical variation (boxplot) vs current value at site level ######
 boxyrsite<-function(data, curyr, site, parm){
   library(plyr)
   library(ggplot2)
   library(reshape)
-  
-  ######### Add in missing monthly obervations as NA
+	month_tlu<-read.csv("month.csv", colClasses = "character") 
+	sites<- read.csv("~/Desktop/NETNWQ/tblLocations.txt") # site details
+	head(sites)
+
+	######### Add in missing monthly obervations as NA
   # Create Year variable (can skip)
   data$StartDate<-as.Date(data$StartDate, format= "%m/%d/%Y") #convert to StartDate
   data$month<-as.factor(format(data$StartDate,"%m")) #convert to month
+  head(data)
   
   ## create molten data frame (all values are represented for each site*time combination)
-  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=c("Temp_C","DO_mg.L","SpCond","Discharge", "pH" ))
-  #head(discrete.melt)
+  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=c("Temp_C","DO_mg.L","SpCond","Discharge", "pH", "Turbidity" ))
+  head(discrete.melt)
   
   ##### Add in missing monthly observations for final analysis file
   ## this just reshapes the dataframe, if there are more than two obs per site/month/Year combination than the 'fun' argument may have to change. 
@@ -42,9 +43,15 @@ boxyrsite<-function(data, curyr, site, parm){
   discrete.month<-discrete.month[order(discrete.month$NETNCode,discrete.month$Year,discrete.month$month),]
   #head(discrete.month)
   
+  # join in site metadata
+  discrete.month<-join(sites[,c("ParkCode","Description","NETNCode","StartLat","StartLon")],discrete.month, by="NETNCode")
+  head(discrete.month)
+  
+  # index data by site
   data<-discrete.month[discrete.month$NETNCode %in% site,]
   data<-droplevels(data)
-  
+  #head(data)
+ 
   data2<-data[,c("NETNCode","Year","month",parm)]
   data2<-droplevels(data2)
   
@@ -52,15 +59,15 @@ boxyrsite<-function(data, curyr, site, parm){
     ## Temperature per month
     p <- ggplot(data[!data$Year %in% curyr,], aes(as.factor(month), Temp_C))+ labs(y = "Temperature (C)", x= "Month") + geom_boxplot(outlier.size=.5) +ylim(0,32)### plots variation in previous Year's data
     
-    p<- (p+facet_wrap(~NETNCode)+  geom_jitter(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+ geom_hline(yintercept = 31, color ="blue") +
-      theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
+    p<- (p+facet_wrap(~Description)+  geom_point(data= data2[data2$Year %in% curyr,],  color="red", size=2)+ geom_hline(yintercept = 31, color ="blue")+
+    	theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
       theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
       theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
-      theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-      theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
+      theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1))+
+      theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1))+
       theme(legend.key = element_rect(fill = "white", color = "black")) +
       theme(panel.background =  element_rect(fill="white", colour="black")) +
-      theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$NETNCode[1]))
+      theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$ParkCode[1])+ theme_bw())
     
     print(p) 
   }
@@ -68,16 +75,17 @@ boxyrsite<-function(data, curyr, site, parm){
     ## DO_mg.L per month
     p <- ggplot(data[!data$Year %in% curyr,], aes(as.factor(month), DO_mg.L))+ labs(y = "Dissolved Oxygen (mg/L)", x= "Month") + geom_boxplot(outlier.size=.5)
     
-    p<- (p+ facet_wrap(~NETNCode)+geom_jitter(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+  
+    p<- (p+ facet_wrap(~Description)+geom_point(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+  
       geom_hline(yintercept = 4, color ="blue") +
       theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
       theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
       theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
-      theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-      theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
+      theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1))+
+      theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1))+
       theme(legend.key = element_rect(fill = "white", color = "black")) +
       theme(panel.background =  element_rect(fill="white", colour="black")) +
-      theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$NETNCode[1]))
+      theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$ParkCode[1])+ theme_bw())
+    
     print(p) 
   }
   
@@ -85,15 +93,15 @@ boxyrsite<-function(data, curyr, site, parm){
     ## SpCond per month
     p <- ggplot(data[!data$Year %in% curyr,], aes(as.factor(month), SpCond))+ labs(y = "Specific Conductance (mS/cm)", x= "Month") + geom_boxplot(outlier.size=.5) 
     
-    p<- (p + facet_wrap(~NETNCode)+geom_jitter(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+  
+    p<- (p + facet_wrap(~Description)+geom_point(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+  
       theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
       theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
       theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
-      theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-      theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
+      theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1))+
+      theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1))+
       theme(legend.key = element_rect(fill = "white", color = "black")) +
       theme(panel.background =  element_rect(fill="white", colour="black")) +
-      theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$NETNCode[1]))
+      theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$ParkCode[1]) + theme_bw())
     print(p) 
   }
   
@@ -101,15 +109,15 @@ boxyrsite<-function(data, curyr, site, parm){
     ## Discharge per month
     p <- ggplot(data[!data$Year %in% curyr,], aes(as.factor(month), Discharge))+ labs(y = "Discharge (cu ft/s)", x= "Month") + geom_boxplot(outlier.size=.5) + ylim(5, 10)
     
-    p<- (p + facet_wrap(~NETNCode)+geom_jitter(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+geom_hline(yintercept = 9, color ="blue") +geom_hline(yintercept = 6, color ="blue") + 
+    p<- (p + facet_wrap(~Description)+geom_point(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+geom_hline(yintercept = 9, color ="blue") +geom_hline(yintercept = 6, color ="blue") + 
       theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
       theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
       theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
-      theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-      theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
+      theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1))+
+      theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1))+
       theme(legend.key = element_rect(fill = "white", color = "black")) +
       theme(panel.background =  element_rect(fill="white", colour="black")) +
-      theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$NETNCode[1])) 
+      theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$ParkCode[1])+ theme_bw()) 
     print(p)    
   }
  
@@ -117,63 +125,89 @@ boxyrsite<-function(data, curyr, site, parm){
     ## pH per month
     p <- ggplot(data[!data$Year %in% curyr,], aes(as.factor(month), pH))+ labs(y = "pH", x= "Month") + geom_boxplot(outlier.size=.5) + ylim(5, 10)
     
-    p<- (p + facet_wrap(~NETNCode)+geom_jitter(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+geom_hline(yintercept = 9, color ="blue") +geom_hline(yintercept = 6, color ="blue") + 
+    p<- (p + facet_wrap(~Description)+geom_point(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+geom_hline(yintercept = 9, color ="blue") +geom_hline(yintercept = 6, color ="blue") + 
            theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
            theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
            theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
-           theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-           theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
+           theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1))+
+           theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1))+
            theme(legend.key = element_rect(fill = "white", color = "black")) +
            theme(panel.background =  element_rect(fill="white", colour="black")) +
-           theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$NETNCode[1])) 
+           theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$ParkCode[1])+ theme_bw()) 
     print(p)    
   }
   
+  if(parm== "Turbidity"){
+  	## pH per month
+  	p <- ggplot(data[!data$Year %in% curyr,], aes(as.factor(month), Turbidity))+ labs(y = "Turbidity", x= "Month") + geom_boxplot(outlier.size=.5) 
+  	
+  	p<- (p + facet_wrap(~Description)+geom_point(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2) + 
+  			 	theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
+  			 	theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
+  			 	theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
+  			 	theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1))+
+  			 	theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1))+
+  			 	theme(legend.key = element_rect(fill = "white", color = "black")) +
+  			 	theme(panel.background =  element_rect(fill="white", colour="black")) +
+  			 	theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$NETParkCodeNCode[1])+ theme_bw()) 
+  	print(p)    
+  }
+   
 }
 
 ###### FOR QC: plots a single WQ parmeter per month showing historical variation (boxplot) vs current value at site level ######
 
 boxyrsiteQC<-function(data, curyr, site, parm){
-  library(plyr)
-  library(ggplot2)
-  library(reshape)
-  
-  ######### Add in missing monthly obervations as NA
-  # Create Year variable (can skip)
-  data$StartDate<-as.Date(data$StartDate, format= "%m/%d/%Y") #convert to StartDate
-  data$month<-as.factor(format(data$StartDate,"%m")) #convert to month
-  
-  ## create molten data frame (all values are represented for each site*time combination)
-  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=c("Temp_C","DO_mg.L","SpCond","Discharge", "pH"  ))
-  #head(discrete.melt)
-  
-  ##### Add in missing monthly observations for final analysis file
-  ## this just reshapes the dataframe, if there are more than two obs per site/month/Year combination than the 'fun' argument may have to change. 
-  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= sum , add.missing=T , fill=NA )# using sum function becauise only one value per cell
-  
-  # sort
-  discrete.month<-discrete.month[order(discrete.month$NETNCode,discrete.month$Year,discrete.month$month),]
-  #head(discrete.month)
-  
-  data<-discrete.month[discrete.month$NETNCode %in% site,]
-  data<-droplevels(data)
-  
-  data2<-data[,c("NETNCode","Year","month",parm)]
-  data2<-droplevels(data2)
+	library(plyr)
+	library(ggplot2)
+	library(reshape)
+	month_tlu<-read.csv("month.csv", colClasses = "character") 
+	sites<- read.csv("~/Desktop/NETNWQ/tblLocations.txt") # site details
+	head(sites)
+	
+	######### Add in missing monthly obervations as NA
+	# Create Year variable (can skip)
+	data$StartDate<-as.Date(data$StartDate, format= "%m/%d/%Y") #convert to StartDate
+	data$month<-as.factor(format(data$StartDate,"%m")) #convert to month
+	head(data)
+	
+	## create molten data frame (all values are represented for each site*time combination)
+	discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=c("Temp_C","DO_mg.L","SpCond","Discharge", "pH", "Turbidity" ))
+	head(discrete.melt)
+	
+	##### Add in missing monthly observations for final analysis file
+	## this just reshapes the dataframe, if there are more than two obs per site/month/Year combination than the 'fun' argument may have to change. 
+	discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= sum , add.missing=T , fill=NA )# using sum function becauise only one value per cell
+	
+	# sort
+	discrete.month<-discrete.month[order(discrete.month$NETNCode,discrete.month$Year,discrete.month$month),]
+	#head(discrete.month)
+	
+	# join in site metadata
+	discrete.month<-join(sites[,c("ParkCode","Description","NETNCode","StartLat","StartLon")],discrete.month, by="NETNCode")
+	head(discrete.month)
+	
+	# index data by site
+	data<-discrete.month[discrete.month$NETNCode %in% site,]
+	data<-droplevels(data)
+	#head(data)
+	
+	data2<-data[,c("NETNCode","Year","month",parm)]
+	data2<-droplevels(data2)
   
   if(parm== "Temp_C"){
     ## Temperature per month
     p <- ggplot(data[!data$Year %in% curyr,], aes(as.factor(month), Temp_C))+ labs(y = "Temperature (C)", x= "Month") + geom_boxplot(outlier.size=.5)### plots variation in previous Year's data
     
-    p<- (p+facet_wrap(~NETNCode)+  geom_jitter(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+ geom_hline(yintercept = 31, color ="blue") +
-           theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
-           theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
-           theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
-           theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-           theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-           theme(legend.key = element_rect(fill = "white", color = "black")) +
-           theme(panel.background =  element_rect(fill="white", colour="black")) +
-           theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$NETNCode[1]))
+    p<- (p + facet_wrap(~Description)+geom_point(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2) + 
+    		 	theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
+    		 	theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
+    		 	theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
+    		 	theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1))+
+    		 	theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1))+
+    		 	theme(legend.key = element_rect(fill = "white", color = "black")) +
+    		 	theme(panel.background =  element_rect(fill="white", colour="black")) +
+    		 	theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$NETParkCodeNCode[1])+ theme_bw()) 
     
     print(p) 
   }
@@ -181,16 +215,16 @@ boxyrsiteQC<-function(data, curyr, site, parm){
     ## DO_mg.L per month
     p <- ggplot(data[!data$Year %in% curyr,], aes(as.factor(month), DO_mg.L))+ labs(y = "Dissolved Oxygen (mg/L)", x= "Month") + geom_boxplot(outlier.size=.5)
     
-    p<- (p+ facet_wrap(~NETNCode)+geom_jitter(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+  
-           geom_hline(yintercept = 4, color ="blue") +
-           theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
-           theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
-           theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
-           theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-           theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-           theme(legend.key = element_rect(fill = "white", color = "black")) +
-           theme(panel.background =  element_rect(fill="white", colour="black")) +
-           theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$NETNCode[1]))
+    p<- (p + facet_wrap(~Description)+geom_point(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2) + 
+    		 	theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
+    		 	theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
+    		 	theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
+    		 	theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1))+
+    		 	theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1))+
+    		 	theme(legend.key = element_rect(fill = "white", color = "black")) +
+    		 	theme(panel.background =  element_rect(fill="white", colour="black")) +
+    		 	theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$NETParkCodeNCode[1])+ theme_bw()) 
+    
     print(p) 
   }
   
@@ -198,15 +232,15 @@ boxyrsiteQC<-function(data, curyr, site, parm){
     ## SpCond per month
     p <- ggplot(data[!data$Year %in% curyr,], aes(as.factor(month), SpCond))+ labs(y = "Specific Conductance (mS/cm)", x= "Month") + geom_boxplot(outlier.size=.5) 
     
-    p<- (p + facet_wrap(~NETNCode)+geom_jitter(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+  
-           theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
-           theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
-           theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
-           theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-           theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-           theme(legend.key = element_rect(fill = "white", color = "black")) +
-           theme(panel.background =  element_rect(fill="white", colour="black")) +
-           theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$NETNCode[1]))
+    p<- (p + facet_wrap(~Description)+geom_point(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2) + 
+    		 	theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
+    		 	theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
+    		 	theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
+    		 	theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1))+
+    		 	theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1))+
+    		 	theme(legend.key = element_rect(fill = "white", color = "black")) +
+    		 	theme(panel.background =  element_rect(fill="white", colour="black")) +
+    		 	theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$NETParkCodeNCode[1])+ theme_bw()) 
     print(p) 
   }
   
@@ -214,15 +248,15 @@ boxyrsiteQC<-function(data, curyr, site, parm){
     ## Discharge per month
     p <- ggplot(data[!data$Year %in% curyr,], aes(as.factor(month), Discharge))+ labs(y = "Discharge (cu ft/s)", x= "Month") + geom_boxplot(outlier.size=.5)
     
-    p<- (p + facet_wrap(~NETNCode)+geom_jitter(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+ 
-           theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
-           theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
-           theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
-           theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-           theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-           theme(legend.key = element_rect(fill = "white", color = "black")) +
-           theme(panel.background =  element_rect(fill="white", colour="black")) +
-           theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$NETNCode[1])) 
+    p<- (p + facet_wrap(~Description)+geom_point(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2) + 
+    		 	theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
+    		 	theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
+    		 	theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
+    		 	theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1))+
+    		 	theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1))+
+    		 	theme(legend.key = element_rect(fill = "white", color = "black")) +
+    		 	theme(panel.background =  element_rect(fill="white", colour="black")) +
+    		 	theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$NETParkCodeNCode[1])+ theme_bw()) 
     print(p)    
   }
   
@@ -230,67 +264,89 @@ boxyrsiteQC<-function(data, curyr, site, parm){
     ## pH per month
     p <- ggplot(data[!data$Year %in% curyr,], aes(as.factor(month), pH))+ labs(y = "pH", x= "Month") + geom_boxplot(outlier.size=.5)
     
-    p<- (p + facet_wrap(~NETNCode)+geom_jitter(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2) + 
-           theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
-           theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
-           theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
-           theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-           theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-           theme(legend.key = element_rect(fill = "white", color = "black")) +
-           theme(panel.background =  element_rect(fill="white", colour="black")) +
-           theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$NETNCode[1])) 
+    p<- (p + facet_wrap(~Description)+geom_point(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2) + 
+    		 	theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
+    		 	theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
+    		 	theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
+    		 	theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1))+
+    		 	theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1))+
+    		 	theme(legend.key = element_rect(fill = "white", color = "black")) +
+    		 	theme(panel.background =  element_rect(fill="white", colour="black")) +
+    		 	theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$NETParkCodeNCode[1])+ theme_bw()) 
     print(p)    
   }
   
+  if(parm== "Turbidity"){
+  	## pH per month
+  	p <- ggplot(data[!data$Year %in% curyr,], aes(as.factor(month), Turbidity))+ labs(y = "Turbidity", x= "Month") + geom_boxplot(outlier.size=.5)
+  	
+  	p<- (p + facet_wrap(~Description)+geom_point(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2) + 
+  			 	theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
+  			 	theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
+  			 	theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
+  			 	theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1))+
+  			 	theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1))+
+  			 	theme(legend.key = element_rect(fill = "white", color = "black")) +
+  			 	theme(panel.background =  element_rect(fill="white", colour="black")) +
+  			 	theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$NETParkCodeNCode[1])+ theme_bw()) 
+  	print(p)    
+  }
 }
 ####### plots a single WQ parmeter per month showing historical variation (boxplot) vs current value at park level ######
 
 boxyrpark<-function(data, curyr, park, parm){
-  library(plyr)
-  library(ggplot2)
-  library(reshape2)
-  
-  ######### Add in missing monthly obervations as NA
-  # Create Year variable (can skip)
-  data$StartDate<-as.Date(data$StartDate, format= "%m/%d/%Y") #convert to StartDate
-  data$month<-as.factor(format(data$StartDate,"%m")) #convert to month
-  
-  ## create molten data frame (all values are represented for each site*time combination)
-  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=c("Temp_C","DO_mg.L","SpCond","pH" ))
-  #head(discrete.melt)
-  
-  ##### Add in missing monthly observations for final analysis file
-  ## this just reshapes the dataframe, if there are more than two obs per site/month/Year combination than the 'fun' argument may have to change. 
-  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= sum , add.missing=T , fill=NA )# using sum function becauise only one value per cell
-  
-  # sort
-  discrete.month<-discrete.month[order(discrete.month$NETNCode,discrete.month$Year,discrete.month$month),]
-  #head(discrete.month)
-  
-  # join site metadata to site data
-  discrete.month<-join(discrete.month, sites, by="NETNCode")
-  
-  data<-discrete.month[discrete.month$Park_Code %in% park,]
-  data<-droplevels(data)
-  
-  data2<-data[,c("NETNCode","Year","month",parm)]
-  data2<-droplevels(data2)
+	library(plyr)
+	library(ggplot2)
+	library(reshape)
+	month_tlu<-read.csv("month.csv", colClasses = "character") 
+	sites<- read.csv("~/Desktop/NETNWQ/tblLocations.txt") # site details
+	head(sites)
+	
+	######### Add in missing monthly obervations as NA
+	# Create Year variable (can skip)
+	data$StartDate<-as.Date(data$StartDate, format= "%m/%d/%Y") #convert to StartDate
+	data$month<-as.factor(format(data$StartDate,"%m")) #convert to month
+	head(data)
+	
+	## create molten data frame (all values are represented for each site*time combination)
+	discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=c("Temp_C","DO_mg.L","SpCond","Discharge", "pH", "Turbidity" ))
+	head(discrete.melt)
+	
+	##### Add in missing monthly observations for final analysis file
+	## this just reshapes the dataframe, if there are more than two obs per site/month/Year combination than the 'fun' argument may have to change. 
+	discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= sum , add.missing=T , fill=NA )# using sum function becauise only one value per cell
+	
+	# sort
+	discrete.month<-discrete.month[order(discrete.month$NETNCode,discrete.month$Year,discrete.month$month),]
+	#head(discrete.month)
+	
+	# join in site metadata
+	discrete.month<-join(sites[,c("ParkCode","Description","NETNCode","StartLat","StartLon")],discrete.month, by="NETNCode")
+	head(discrete.month)
+	
+	# index data by site
+	data<-discrete.month[discrete.month$ParkCode %in% park,]
+	data<-droplevels(data)
+	#head(data)
+	
+	data2<-data[,c("NETNCode","Year","month",parm)]
+	data2<-droplevels(data2)
   
   if(parm== "Temp_C"){
     ## Temperature per month
     p <- ggplot(data[!data$Year %in% curyr,], aes(month, Temp_C))+ labs(y = "Temperature (C)", x= "Month") + geom_boxplot(outlier.size=.5)+ ylim(0,32) ### plots variation in previous Year's data
     
   
-    p<- (p+facet_wrap(~NETNCode, ncol=2, scales = "free") + geom_jitter(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+ 
-           geom_hline(yintercept = 31, color ="blue") +
+    p<- (p+facet_wrap(~Description, ncol=2, scales = "free") + geom_point(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+ 
+           geom_hline(yintercept = 31, color ="blue") +ggtitle(data$ParkCode[1]) +
            theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
            theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
            theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
-           theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-           theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
+           theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1))+
+           theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1))+
            theme(legend.key = element_rect(fill = "white", color = "black")) +
            theme(panel.background =  element_rect(fill="white", colour="black")) +
-           theme(panel.grid.major = element_line(colour = "grey90")))
+           theme(panel.grid.major = element_line(colour = "grey90")) +theme_bw())
     
     print(p) 
   }
@@ -299,15 +355,15 @@ boxyrpark<-function(data, curyr, park, parm){
     ## DO_mg.L per month
     p <- ggplot(data[!data$Year %in% curyr,], aes(month, DO_mg.L))+ labs(y = "Dissolved Oxygen (mg/L)", x= "Month") + geom_boxplot(outlier.size=.5) 
     
-    p<- (p+facet_wrap(~NETNCode, ncol=2, scales = "free") + geom_jitter(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+ 
-           theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
+    p<- (p+facet_wrap(~Description, ncol=2, scales = "free") + geom_point(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+ 
+           theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+ggtitle(data$ParkCode[1]) +
            theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
            theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
-           theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-           theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
+           theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1))+
+           theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1))+
            theme(legend.key = element_rect(fill = "white", color = "black")) +
            theme(panel.background =  element_rect(fill="white", colour="black")) +
-           theme(panel.grid.major = element_line(colour = "grey90")))
+           theme(panel.grid.major = element_line(colour = "grey90"))+theme_bw())
     print(p) 
   }
   
@@ -315,15 +371,15 @@ boxyrpark<-function(data, curyr, park, parm){
     ## SpCond per month
     p <- ggplot(data[!data$Year %in% curyr,], aes(month, SpCond))+ labs(y = "Specific Conductance (mS/cm)", x= "Month") + geom_boxplot(outlier.size=.5) 
     
-    p<- (p+facet_wrap(~NETNCode, ncol=2, scales = "free") + geom_jitter(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+   
-           theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
+    p<- (p+facet_wrap(~Description, ncol=2, scales = "free") + geom_point(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+   
+           theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+ggtitle(data$ParkCode[1]) +
            theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
            theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
-           theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-           theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
+           theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1))+
+           theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1))+
            theme(legend.key = element_rect(fill = "white", color = "black")) +
            theme(panel.background =  element_rect(fill="white", colour="black")) +
-           theme(panel.grid.major = element_line(colour = "grey90")))
+           theme(panel.grid.major = element_line(colour = "grey90"))+theme_bw())
     print(p) 
   }
   
@@ -331,16 +387,16 @@ boxyrpark<-function(data, curyr, park, parm){
     ## pH per month
     p <- ggplot(data[!data$Year %in% curyr,], aes(month, pH))+ labs(y = "pH", x= "Month") + geom_boxplot(outlier.size=.5)+ ylim(5, 10) 
     
-    p<- (p+facet_wrap(~NETNCode, ncol=2, scales = "free") + geom_jitter(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+ 
-           geom_hline(yintercept = 9, color ="blue") +geom_hline(yintercept = 6, color ="blue") +
+    p<- (p+facet_wrap(~Description, ncol=2, scales = "free") + geom_point(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+ 
+           geom_hline(yintercept = 9, color ="blue") +geom_hline(yintercept = 6, color ="blue") +ggtitle(data$ParkCode[1]) +
            theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
            theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
            theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
-           theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-           theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
+           theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1))+
+           theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1))+
            theme(legend.key = element_rect(fill = "white", color = "black")) +
            theme(panel.background =  element_rect(fill="white", colour="black")) +
-           theme(panel.grid.major = element_line(colour = "grey90"))) 
+           theme(panel.grid.major = element_line(colour = "grey90"))+theme_bw()) 
     print(p)    
   }
   
@@ -348,18 +404,32 @@ boxyrpark<-function(data, curyr, park, parm){
     ## Discharge per month
     p <- ggplot(data[!data$Year %in% curyr,], aes(as.factor(month), Discharge))+ labs(y = "Discharge (cu ft/s)", x= "Month") + geom_boxplot(outlier.size=.5)
     
-    p<- (p + facet_wrap(~NETNCode)+geom_jitter(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+ 
-           theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
+    p<- (p + facet_wrap(~Description)+geom_point(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+ 
+           theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+ggtitle(data$ParkCode[1]) +
            theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
            theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
-           theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-           theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
+           theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1))+
+           theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1))+
            theme(legend.key = element_rect(fill = "white", color = "black")) +
            theme(panel.background =  element_rect(fill="white", colour="black")) +
-           theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$NETNCode[1])) 
+           theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$NETNCode[1])+theme_bw()) 
     print(p)    
   }
-  
+	if(parm== "Turbidity"){
+		## Discharge per month
+		p <- ggplot(data[!data$Year %in% curyr,], aes(as.factor(month), Turbidity))+ labs(y = "Turbidity", x= "Month") + geom_boxplot(outlier.size=.5)
+		
+		p<- (p + facet_wrap(~Description)+geom_point(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+ 
+				 	theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+ggtitle(data$ParkCode[1]) +
+				 	theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
+				 	theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
+				 	theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1))+
+				 	theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1))+
+				 	theme(legend.key = element_rect(fill = "white", color = "black")) +
+				 	theme(panel.background =  element_rect(fill="white", colour="black")) +
+				 	theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$NETNCode[1])+theme_bw()) 
+		print(p)    
+	}
 }
 
 ###### Interactive (HTML)plot: plots single WQ parmeter over time period at site level ######
@@ -454,7 +524,7 @@ scattermonthsite<-function(data, curyr, site,park, parm) {
     ## Temperature per month
     p <- ggplot(data[!data$Year %in% curyr,], aes(month, Temp_C))+ labs(y = "Temperature (C)", x= "Month") + geom_point(colour = "black", size = 1)
     
-    p<- (p+facet_wrap(~NETNCode, ncol=2, scales = "free_x") + geom_jitter(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+ 
+    p<- (p+facet_wrap(~NETNCode, ncol=2, scales = "free_x") + geom_point(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+ 
            theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
            theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
            theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
@@ -471,7 +541,7 @@ scattermonthsite<-function(data, curyr, site,park, parm) {
     ## DO_mg.L per month
     p <- ggplot(data[!data$Year %in% curyr,], aes(month, DO_mg.L))+ labs(y = "Dissolved Oxygen (mg/L)", x= "Month") + geom_point(colour = "black", size = 1)
     
-    p<- (p+facet_wrap(~NETNCode, ncol=2, scales = "free_x") + geom_jitter(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+ 
+    p<- (p+facet_wrap(~NETNCode, ncol=2, scales = "free_x") + geom_point(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+ 
            theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
            theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
            theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
@@ -487,7 +557,7 @@ scattermonthsite<-function(data, curyr, site,park, parm) {
     ## SpCond per month
     p <- ggplot(data[!data$Year %in% curyr,], aes(month, SpCond))+ labs(y = "Specific Conductance (mS/cm)", x= "Month") + geom_point(colour = "black", size = 1) 
     
-    p<- (p+facet_wrap(~NETNCode, ncol=2, scales = "free_x") + geom_jitter(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+   
+    p<- (p+facet_wrap(~NETNCode, ncol=2, scales = "free_x") + geom_point(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+   
            theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
            theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
            theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
@@ -503,7 +573,7 @@ scattermonthsite<-function(data, curyr, site,park, parm) {
     ## pH per month
     p <- ggplot(data[!data$Year %in% curyr,], aes(month, pH))+ labs(y = "pH", x= "Month") + geom_point(colour = "black", size = 1) 
     
-    p<- (p+facet_wrap(~NETNCode, ncol=2, scales = "free_x") + geom_jitter(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+ 
+    p<- (p+facet_wrap(~NETNCode, ncol=2, scales = "free_x") + geom_point(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+ 
            theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
            theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
            theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
