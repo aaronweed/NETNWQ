@@ -1,22 +1,5 @@
 ### These functions create various WQ plots for monthly discrete data collected by NETN.
-### A Weed 8/25/2016
-
-
-### Still need to add in Discharge and add in site metadata for plotting and to aggregate at park scale
-
-
-## imports a df
-
-#  $ SiteGroup   : Factor w/ 2 levels "ACAD","LNETN": 1 1 1 1 1 1 1 1 1 1 ...
-#  $ NETNCode    : Factor w/ 44 levels "ACABIN","ACBRKB",..: 1 1 1 1 1 1 1 1 1 1 ...
-#  $ LocationType: Factor w/ 1 level "Stream": 1 1 1 1 1 1 1 1 1 1 ...
-#  $ Year        : int  2006 2006 2006 2006 2006 2006 2008 2008 2008 2008 ...
-#  $ StartDate   : Factor w/ 591 levels "10/1/2009","10/1/2012",..: 147 245 339 456 507 66 101 189 371 459 ...
-#  $ Discharge   : num  1.14 2.4 6.26 0.229 0.353 3.54 0.314 NA NA 4.59 ...
-#  $ DO_mg.L     : num  9.47 8.1 6.22 6.09 6.26 ...
-#  $ pH          : num  6.44 6.45 5.98 6.17 5.61 5.62 6.21 6.3 6.17 5.76 ...
-#  $ SpCond      : int  25 27 23 29 28 33 27 30 38 26 ...
-#  $ Temp_C      : num  17.4 22.9 22.6 20 16.8 ...
+### A Weed 8/25/2016; updated 11/5/2016
 
 
 ###### plots a single WQ parmeter per month showing historical variation (boxplot) vs current value at site level ######
@@ -31,12 +14,12 @@ boxyrsite<-function(data, curyr, site, parm){
   data$month<-as.factor(format(data$StartDate,"%m")) #convert to month
   
   ## create molten data frame (all values are represented for each site*time combination)
-  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=c("Temp_C","DO_mg.L","SpCond","Discharge", "pH" ))
+  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=names(data[, sapply(data, is.numeric)]))
   #head(discrete.melt)
   
   ##### Add in missing monthly observations for final analysis file
   ## this just reshapes the dataframe, if there are more than two obs per site/month/Year combination than the 'fun' argument may have to change. 
-  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= sum , add.missing=T , fill=NA )# using sum function becauise only one value per cell
+  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= mean , add.missing=T , fill=NA )# using mean function becauise only one value per cell
   
   # sort
   discrete.month<-discrete.month[order(discrete.month$NETNCode,discrete.month$Year,discrete.month$month),]
@@ -148,12 +131,12 @@ boxyrsiteQC<-function(data, curyr, site, parm){
   data$month<-as.factor(format(data$StartDate,"%m")) #convert to month
   
   ## create molten data frame (all values are represented for each site*time combination)
-  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=c("Temp_C","DO_mg.L","SpCond","Discharge", "pH"  ))
+  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=names(data[, sapply(data, is.numeric)]))
   #head(discrete.melt)
   
   ##### Add in missing monthly observations for final analysis file
   ## this just reshapes the dataframe, if there are more than two obs per site/month/Year combination than the 'fun' argument may have to change. 
-  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= sum , add.missing=T , fill=NA )# using sum function becauise only one value per cell
+  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= mean , add.missing=T , fill=NA )# using mean function becauise only one value per cell
   
   # sort
   discrete.month<-discrete.month[order(discrete.month$NETNCode,discrete.month$Year,discrete.month$month),]
@@ -264,12 +247,12 @@ boxyrpark<-function(data, curyr, park, parm){
   data$month<-as.factor(format(data$StartDate,"%m")) #convert to month
   
   ## create molten data frame (all values are represented for each site*time combination)
-  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=c( "Discharge","Temp_C","DO_mg.L","SpCond","pH" ))
+  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=names(data[, sapply(data, is.numeric)]))
   #head(discrete.melt)
   
   ##### Add in missing monthly observations for final analysis file
   ## this just reshapes the dataframe, if there are more than two obs per site/month/Year combination than the 'fun' argument may have to change. 
-  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= sum , add.missing=T , fill=NA )# using sum function becauise only one value per cell
+  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= mean , add.missing=T , fill=NA )# using mean function becauise only one value per cell
   
   # sort
   discrete.month<-discrete.month[order(discrete.month$NETNCode,discrete.month$Year,discrete.month$month),]
@@ -523,15 +506,17 @@ scattermonthsite<-function(data, curyr, site, parm){
   ######### Add in missing monthly obervations as NA
   # Create Year variable (can skip)
   data$StartDate<-as.Date(data$StartDate, format= "%m/%d/%Y") #convert to StartDate
+  data$Year<-as.factor(data$Year)
   data$month<-as.factor(format(data$StartDate,"%m")) #convert to month
   
   ## create molten data frame (all values are represented for each site*time combination)
-  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=c("Temp_C","DO_mg.L","SpCond","Discharge", "pH" ))
+  ## programmed to select only numeric variables as measure vars. 
+  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=  names(data[, sapply(data, is.numeric)]))
   #head(discrete.melt)
   
   ##### Add in missing monthly observations for final analysis file
   ## this just reshapes the dataframe, if there are more than two obs per site/month/Year combination than the 'fun' argument may have to change. 
-  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= sum , add.missing=T , fill=NA )# using sum function becauise only one value per cell
+  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= mean , add.missing=T , fill=NA )# using mean function becauise only one value per cell
   
   # sort
   discrete.month<-discrete.month[order(discrete.month$NETNCode,discrete.month$Year,discrete.month$month),]
@@ -643,12 +628,12 @@ scattermonthpark<-function(data, curyr, site,park, parm) {
   data$month<-as.factor(format(data$StartDate,"%m")) #convert to month
   
   ## create molten data frame (all values are represented for each site*time combination)
-  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=c("Discharge","Temp_C","DO_mg.L","SpCond","pH" ))
+  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=names(data[, sapply(data, is.numeric)]))
   #head(discrete.melt)
   
   ##### Add in missing monthly observations for final analysis file
   ## this just reshapes the dataframe, if there are more than two obs per site/month/Year combination than the 'fun' argument may have to change. 
-  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= sum , add.missing=T , fill=NA )# using sum function becauise only one value per cell
+  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= mean , add.missing=T , fill=NA )# using mean function becauise only one value per cell
   
   # sort
   discrete.month<-discrete.month[order(discrete.month$NETNCode,discrete.month$Year,discrete.month$month),]
@@ -850,9 +835,6 @@ scattertimesite<-function(data, site, parm, trend) {
   data$StartDate<-as.Date(data$StartDate, format= "%m/%d/%Y") #convert to StartDate
   data$month<-as.factor(format(data$StartDate,"%m")) #convert to month
   
-  # bind in site names for plotting
-  data<-join(data, sites[,c("ParkCode", "LocationType", "Description", "NETNCode")], by="NETNCode")
-
   if(parm== "Temp_C"){
     ## Temperature per month
     p <- ggplot(data, aes(StartDate, Temp_C))+ labs(y = "Temperature (C)", x= "Date") + geom_point(colour = "black", size = 2,na.rm=TRUE)
@@ -879,7 +861,7 @@ scattertimesite<-function(data, site, parm, trend) {
   
   if(parm== "Discharge"){
     ## Discharge per month
-    p <- ggplot(data, aes(StartDate, Discharge))+ labs(y = "Discharge (cu ft/s", x= "Date") + geom_point(colour = "black", size = 2,na.rm=TRUE)
+    p <- ggplot(data, aes(StartDate, Discharge))+ labs(y = "Discharge (cu ft/s)", x= "Date") + geom_point(colour = "black", size = 2,na.rm=TRUE)
     #+ geom_line(size=1 , color = "grey")
     }
   
@@ -915,20 +897,29 @@ scattertimesite<-function(data, site, parm, trend) {
 
 ###### Plots single WQ parmeter over time in each site at park level ######
 
-scattertimepark<-function(data, park, parm, trend) {
+scattertimepark<-function(data, type, park, parm, trend) {
   library(plyr)
   library(ggplot2)
   library(reshape2)
   library(zoo)
   library(xts)
-  sites <- read.csv("tblLocations.txt") ### import site metadata
-  # bind in site names for plotting
-  data<-join(data, sites[,c("ParkCode", "LocationType", "Description", "NETNCode")], by="NETNCode")
   
   data<-data[data$ParkCode %in% park,]
   data<-droplevels(data)
   data$StartDate<-as.Date(data$StartDate, format= "%m/%d/%Y") #convert to StartDate
   
+  if(type =="stream"){
+    data<-data[data$Type == "stream", ]
+    data<-droplevels(data)
+  }
+  
+  if(type =="lk_pnd"){
+    data<-data[data$Type == "lk_pnd", ]
+    data<-droplevels(data)
+  }
+  
+  ## sort prior to plotting
+  data<-data[order(data$Description,data$Year),]
   
   if(parm== "Temp_C"){
     ## Temperature per month
@@ -959,7 +950,7 @@ scattertimepark<-function(data, park, parm, trend) {
     
   if(parm== "Discharge"){
     ## Discharge per month
-    p <- ggplot(data, aes(StartDate, Discharge))+ labs(y = "Discharge (cu ft/s", x= "Date") + geom_point(colour = "black", size = 2,na.rm=TRUE)
+    p <- ggplot(data, aes(StartDate, Discharge))+ labs(y = "Discharge (cu ft/s)", x= "Date") + geom_point(colour = "black", size = 2,na.rm=TRUE)
     #+ geom_line(size=1 , color = "grey")
   }
   
@@ -1009,12 +1000,12 @@ TrendPerMonthsite<-function(data, month, site, parm, trend){
   data$month<-as.factor(format(data$StartDate,"%m")) #convert to month
   
   ## create molten data frame (all values are represented for each site*time combination)
-  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=c("Discharge","Temp_C","DO_mg.L","SpCond","pH" ))
+  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=names(data[, sapply(data, is.numeric)]))
   #head(discrete.melt)
   
   ##### Add in missing monthly observations for final analysis file
   ## this just reshapes the dataframe, if there are more than two obs per site/month/Year combination than the 'fun' argument may have to change. 
-  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= sum , add.missing=T , fill=NA )# using sum function becauise only one value per cell
+  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= mean , add.missing=T , fill=NA )# using mean function becauise only one value per cell
   
   # sort
   discrete.month<-discrete.month[order(discrete.month$NETNCode,discrete.month$Year,discrete.month$month),]
@@ -1064,7 +1055,7 @@ TrendPerMonthsite<-function(data, month, site, parm, trend){
     p<- (p+facet_wrap(~Description, ncol=2, scales = "free") + ggtitle(data$month2)+ 
            geom_smooth(method= "lm", se= TRUE) +
            theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
-           theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
+           theme(axis.text.x = element_text(angle = 90,  vjust=0,size = 16 * 0.8)) +
            theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
            theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
            theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
@@ -1077,7 +1068,7 @@ TrendPerMonthsite<-function(data, month, site, parm, trend){
   if(trend == "N"){
     p<- (p+facet_wrap(~Description, ncol=2, scales = "free") + ggtitle(data$month2)+  
            theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
-           theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
+           theme(axis.text.x = element_text(angle = 90,  vjust=0,size = 16 * 0.8)) +
            theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
            theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
            theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
@@ -1104,12 +1095,12 @@ TrendPerMonthPark<-function(data, month, park, parm, trend){
   data$month<-as.factor(format(data$StartDate,"%m")) #convert to month
   
   ## create molten data frame (all values are represented for each site*time combination)
-  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=c("Temp_C","DO_mg.L","SpCond","pH" ))
+  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=names(data[, sapply(data, is.numeric)]))
   #head(discrete.melt)
   
   ##### Add in missing monthly observations for final analysis file
   ## this just reshapes the dataframe, if there are more than two obs per site/month/Year combination than the 'fun' argument may have to change. 
-  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= sum , add.missing=T , fill=NA )# using sum function becauise only one value per cell
+  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= mean , add.missing=T , fill=NA )# using mean function becauise only one value per cell
   
   # sort
   discrete.month<-discrete.month[order(discrete.month$NETNCode,discrete.month$Year,discrete.month$month),]
@@ -1124,6 +1115,9 @@ TrendPerMonthPark<-function(data, month, park, parm, trend){
     
   ## append month text for plotting
   data<-join(data,month_tlu, by="month")
+ 
+   ## sort prior to plotting
+  data<-data[order(data$Description,data$Year),]
   
   if(parm== "Temp_C"){
     ## Temperature in month per Year
@@ -1162,10 +1156,10 @@ TrendPerMonthPark<-function(data, month, park, parm, trend){
     
     if(park== "ACAD"){
       
-    p<- (p+facet_wrap(~Description, ncol=3, scales = "free") + 
+    p<- (p+facet_wrap(~Description, ncol=3, scales = "free_x") + 
            geom_smooth(method= "lm", se= FALSE) +
            theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
-           theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
+           theme(axis.text.x = element_text(angle = 90,  vjust=0,size = 16 * 0.8)) +
            theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
            theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
            theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
@@ -1176,10 +1170,10 @@ TrendPerMonthPark<-function(data, month, park, parm, trend){
     
     }else
       {
-      p<- (p+facet_wrap(~Description, ncol=2, scales = "free") + ggtitle(data$month2)+ 
+      p<- (p+facet_wrap(~Description, ncol=2, scales = "free_x") + ggtitle(data$month2)+ 
              geom_smooth(method= "lm", se= FALSE) +
              theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
-             theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
+             theme(axis.text.x = element_text(angle = 90,  vjust=0,size = 16 * 0.8)) +
              theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
              theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
              theme(legend.position = "top") +
@@ -1195,9 +1189,9 @@ TrendPerMonthPark<-function(data, month, park, parm, trend){
     
     if(park== "ACAD"){
     
-    p<- (p+facet_wrap(~Description, ncol=3, scales = "free") + ggtitle(data$month2)+  
+    p<- (p+facet_wrap(~Description, ncol=3, scales = "free_x") + ggtitle(data$month2)+  
            theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
-           theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
+           theme(axis.text.x = element_text(angle = 90,  vjust=0,size = 16 * 0.8)) +
            theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
            theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
            theme(legend.position = "top") +
@@ -1207,9 +1201,9 @@ TrendPerMonthPark<-function(data, month, park, parm, trend){
            theme(panel.grid.major = element_line(colour = "grey90")))  
     }else
       {
-        p<- (p+facet_wrap(~Description, ncol=2, scales = "free") + ggtitle(data$month2)+  
+        p<- (p+facet_wrap(~Description, ncol=2, scales = "free_x") + ggtitle(data$month2)+  
                theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
-               theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
+               theme(axis.text.x = element_text(angle = 90,  vjust=0,size = 16 * 0.8)) +
                theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
                theme(legend.position = "top") +
                theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
@@ -1240,12 +1234,12 @@ ScatterPerMonthPark<-function(data, month, park, parm, trend){
   data$month<-as.factor(format(data$StartDate,"%m")) #convert to month
   
   ## create molten data frame (all values are represented for each site*time combination)
-  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=c("Temp_C","DO_mg.L","SpCond","pH" ))
+  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=names(data[, sapply(data, is.numeric)]))
   #head(discrete.melt)
   
   ##### Add in missing monthly observations for final analysis file
   ## this just reshapes the dataframe, if there are more than two obs per site/month/Year combination than the 'fun' argument may have to change. 
-  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= sum , add.missing=T , fill=NA )# using sum function becauise only one value per cell
+  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= mean , add.missing=T , fill=NA )# using mean function because only one value per cell
   
   # sort
   discrete.month<-discrete.month[order(discrete.month$NETNCode,discrete.month$Year,discrete.month$month),]
@@ -1272,36 +1266,39 @@ ScatterPerMonthPark<-function(data, month, park, parm, trend){
   ## append month text for plotting
   data<-join(data,month_tlu, by="month")
   
+  ## sort prior to plotting
+  data<-data[order(data$Description,data$Year),]
+  
   if(parm== "Temp_C"){
     ## Temperature in month per Year
-    p <- ggplot(data, aes(x= Year, y = Temp_C, colour =factor(month2)))+ labs(y = "Temperature (C)", x= "Year") + geom_point(size = 2,na.rm=TRUE)
+    p <- ggplot(data, aes(x= Year, y = Temp_C, colour =factor(month2)))+ labs(colour = "Month",y = "Temperature (C)", x= "Year") + geom_point(size = 2,na.rm=TRUE)
     # geom_line(size=1 , color = "grey")+ylim(0,31)
     
   }
   
   if(parm== "DO_mg.L"){
     ## DO_mg.L per month
-    p <- ggplot(data, aes(x= Year, y= DO_mg.L, colour =factor(month2)))+ labs(y = "Dissolved Oxygen (mg/L)", x= "Year") + geom_point(colour = "black", size = 2,na.rm=TRUE)
+    p <- ggplot(data, aes(x= Year, y= DO_mg.L, colour =factor(month2)))+ labs(colour = "Month",y = "Dissolved Oxygen (mg/L)", x= "Year") + geom_point( size = 2,na.rm=TRUE)
     # geom_line(size=1 , color = "grey")
     
   }
   
   if(parm== "SpCond"){
     ## SpCond per month
-    p <- ggplot(data, aes(x= Year, y= SpCond, colour =factor(month2)))+ labs(y = expression("Specific Conductance (" * mu ~ "S/cm)"), x= "Year") + geom_point(colour = "black", size = 2,na.rm=TRUE)
+    p <- ggplot(data, aes(x= Year, y= SpCond, colour =factor(month2)))+ labs(colour = "Month",y = expression("Specific Conductance (" * mu ~ "S/cm)"), x= "Year") + geom_point( size = 2,na.rm=TRUE)
     #geom_line(size=1 , color = "grey")
     
   }
   
   if(parm== "pH"){
     ## pH per month
-    p <- ggplot(data, aes(x=Year , y= pH, colour =factor(month2)))+ labs(y = "pH", x= "Year") + geom_point(colour = "black", size = 2,na.rm=TRUE)
+    p <- ggplot(data, aes(x=Year , y= pH, colour =factor(month2)))+ labs(colour = "Month",y = "pH", x= "Year") + geom_point( size = 2,na.rm=TRUE)
     #geom_line(size=1 , color = "grey")
   }
   
   if(parm== "Discharge"){
     ## Discharge per month
-    p <- ggplot(data, aes(x=Year , y= Discharge, colour =factor(month2)))+ labs(y = "Discharge (cu ft/s)", x= "Year") + geom_point(colour = "black", size = 2,na.rm=TRUE)
+    p <- ggplot(data, aes(x=Year , y= Discharge, colour =factor(month2)))+ labs(colour = "Month",y = "Discharge (cu ft/s)", x= "Year") + geom_point( size = 2,na.rm=TRUE)
     #geom_line(size=1 , color = "grey")
   }
   
@@ -1309,10 +1306,10 @@ ScatterPerMonthPark<-function(data, month, park, parm, trend){
     
     if(park== "ACAD"){
       
-      p<- (p+facet_wrap(~Description, ncol=3, scales = "free") + 
+      p<- (p+facet_wrap(~Description, ncol=3, scales = "free_x") + 
              geom_smooth(method= "lm", se= FALSE) +
              theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
-             theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
+             theme(axis.text.x = element_text(angle = 90,  vjust=0,size = 16 * 0.8)) +
              theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
              theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
              theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
@@ -1323,10 +1320,10 @@ ScatterPerMonthPark<-function(data, month, park, parm, trend){
       
     }else
     {
-      p<- (p+facet_wrap(~Description, ncol=2, scales = "free") + 
+      p<- (p+facet_wrap(~Description, ncol=2, scales = "free_x") + 
              geom_smooth(method= "lm", se= FALSE) +
              theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
-             theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
+             theme(axis.text.x = element_text(angle = 90,  vjust=0,size = 16 * 0.8)) +
              theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
              theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
              theme(legend.position = "top") +
@@ -1342,9 +1339,9 @@ ScatterPerMonthPark<-function(data, month, park, parm, trend){
     
     if(park== "ACAD"){
       
-      p<- (p+facet_wrap(~Description, ncol=3, scales = "free") +
+      p<- (p+facet_wrap(~Description, ncol=3, scales = "free_x") +
              theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
-             theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
+             theme(axis.text.x = element_text(angle = 90,  vjust=0,size = 16 * 0.8)) +
              theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
              theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
              theme(legend.position = "top") +
@@ -1354,9 +1351,9 @@ ScatterPerMonthPark<-function(data, month, park, parm, trend){
              theme(panel.grid.major = element_line(colour = "grey90")))  
     }else
     {
-      p<- (p+facet_wrap(~Description, ncol=2, scales = "free") +  
+      p<- (p+facet_wrap(~Description, ncol=2, scales = "free_x") +  
              theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
-             theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
+             theme(axis.text.x = element_text(angle = 90,  vjust=0,size = 16 * 0.8)) +
              theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
              theme(legend.position = "top") +
              theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
@@ -1390,12 +1387,12 @@ BivarSite<-function(data, site, x, y, reg){
   data$month<-as.factor(format(data$StartDate,"%m")) #convert to month
   
   ## create molten data frame (all values are represented for each site*time combination)
-  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=c( "Discharge","Temp_C","DO_mg.L","SpCond","pH" ))
+  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=names(data[, sapply(data, is.numeric)]))
   #head(discrete.melt)
   
   ##### Add in missing monthly observations for final analysis file
   ## this just reshapes the dataframe, if there are more than two obs per site/month/Year combination than the 'fun' argument may have to change. 
-  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= sum , add.missing=T , fill=NA )# using sum function becauise only one value per cell
+  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= mean , add.missing=T , fill=NA )# using mean function becauise only one value per cell
   
   # sort
   discrete.month<-discrete.month[order(discrete.month$NETNCode,discrete.month$Year,discrete.month$month),]
@@ -1520,12 +1517,12 @@ BivarPark<-function(data, park, x, y, reg){
   data$month<-as.factor(format(data$StartDate,"%m")) #convert to month
   
   ## create molten data frame (all values are represented for each site*time combination)
-  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=c( "Discharge","Temp_C","DO_mg.L","SpCond","pH" ))
+  discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=names(data[, sapply(data, is.numeric)]))
   #head(discrete.melt)
   
   ##### Add in missing monthly observations for final analysis file
   ## this just reshapes the dataframe, if there are more than two obs per site/month/Year combination than the 'fun' argument may have to change. 
-  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= sum , add.missing=T , fill=NA )# using sum function becauise only one value per cell
+  discrete.month<-cast(discrete.melt,NETNCode + month+ Year  ~ variable, fun= mean , add.missing=T , fill=NA )# using mean function becauise only one value per cell
   
   # sort
   discrete.month<-discrete.month[order(discrete.month$NETNCode,discrete.month$Year,discrete.month$month),]
@@ -1545,8 +1542,9 @@ BivarPark<-function(data, park, x, y, reg){
   
   data2<-data[,c("ParkCode","Description","NETNCode","Year","month","month2",x,y)]
   data2<-droplevels(data2)
-  #data2<-na.omit(data2)
   
+  ## sort prior to plotting
+  data2<-data2[order(data2$Description,data2$Year),]
   ## fit linear model to data at each site
   temp<-dlply(data2, .(NETNCode), function(d) lm(data2[,c(y)] ~ data2[,c(x)], data = data2, na.action=na.omit))
   
@@ -1562,8 +1560,9 @@ BivarPark<-function(data, park, x, y, reg){
 
   fits <- ldply(temp, linmod)
   
-  corr<-cor.test(data2[,c(y)],data2[,c(x)], method = "pearson", na.action=na.omit)
-  
+  ## Calculate correlatin coeff per site
+  corrs<-dlply(data2, .(NETNCode), function(d) cor.test(data2[,c(y)],data2[,c(x)], method = "pearson", na.action=na.omit))
+ 
   #setup plot
   
   if(reg == "M"){
@@ -1571,7 +1570,7 @@ BivarPark<-function(data, park, x, y, reg){
     p <- ggplot(data2, aes(x= data2[,c(x)], y = data2[,c(y)])) +  geom_point(size = 2,na.rm=TRUE) + 
       labs(y = y, x= x)  
     
-    p<- (p+  facet_wrap(~Description, ncol=2, scales = "free") + 
+    p<- (p+  facet_wrap(~Description, ncol=2, scales = "fixed") + 
            #annotate("text", x= min(data2[,c(x)], na.rm= TRUE)+ 0.3*max(data2[,c(x)], na.rm= TRUE), y= max(data2[,c(y)], na.rm= TRUE)- 0.2*min(data2[,c(x)], na.rm= TRUE) , label = paste("Adj R2 = ",signif(summary(fit)$adj.r.squared, 3),
            #"Intercept =",signif(fit$coef[[1]],3 )," Slope =",signif(fit$coef[[2]], 3)," P =",signif(summary(fit)$coef[2,4], 2))) +
            geom_smooth(span = 0.3)+    
@@ -1592,7 +1591,7 @@ BivarPark<-function(data, park, x, y, reg){
     p <- ggplot(data2, aes(x= data2[,c(x)], y = data2[,c(y)])) +  geom_point(size = 2,na.rm=TRUE) + 
       labs(colour = "Year", y = y, x= x)  
     
-    p<- (p+  facet_wrap(~Description, ncol=2, scales = "free") + 
+    p<- (p+  facet_wrap(~Description, ncol=2, scales = "fixed") + 
            #annotate("text", x= min(data2[,c(x)], na.rm= TRUE)+ 0.7*max(data2[,c(x)], na.rm= TRUE), y= max(data2[,c(y)], na.rm= TRUE)- 0.2*min(data2[,c(x)], na.rm= TRUE) , label = paste("Adj R2 = ",signif(summary(fit)$adj.r.squared, 3),
           #  " Intercept =",signif(fit$coef[[1]],3 )," Slope =",signif(fit$coef[[2]], 3)," P =",signif(summary(fit)$coef[2,4], 2))) +
            geom_smooth(method = "lm", se= TRUE)+    
@@ -1614,8 +1613,8 @@ BivarPark<-function(data, park, x, y, reg){
       labs(colour = "Year", y = y, x= x)  
     
     p<- (p+  facet_wrap(~Description, ncol=2, scales = "free") + 
-           annotate("text", x= min(data2[,c(x)], na.rm= TRUE)+ 0.8*max(data2[,c(x)], na.rm= TRUE), y= max(data2[,c(y)], na.rm= TRUE)- 0.2*min(data2[,c(x)], na.rm= TRUE) , label = paste("r = ",signif(corr$estimate, 3),
-                                                                                                                                                                                         " P =",signif(corr$p.value, 2))) +
+           annotate("text", x= min(data2[,c(x)], na.rm= TRUE)+ 
+          0.4*max(data2[,c(x)], na.rm= TRUE), y= max(data2[,c(y)], na.rm= TRUE)- 0.2*min(data2[,c(x)], na.rm= TRUE) , label = paste("r = ",signif(corr$estimate, 3),                                                                                                                                                                               " P =",signif(corr$p.value, 2))) +
            theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
            theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
            theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
@@ -1634,7 +1633,7 @@ BivarPark<-function(data, park, x, y, reg){
     p <- ggplot(data2, aes(x= data2[,c(x)], y = data2[,c(y)], colour =factor(Year))) +  geom_point(size = 2,na.rm=TRUE) + 
       labs(colour = "Year", y = y, x= x)
     
-    p<- (p+facet_wrap(~Description, ncol=2, scales = "free") + 
+    p<- (p+facet_wrap(~Description, ncol=2, scales = "fixed") + 
            theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
            theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
            theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
