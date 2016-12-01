@@ -5,7 +5,7 @@ library(ggplot2)
 require(dygraphs)
 library(xts)
 library(reshape2)
-library(reshape)
+library(reshape)   
 
 ### load in functions for data query and plotting ####
 #Plotting
