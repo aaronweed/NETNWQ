@@ -52,13 +52,13 @@ levels(discrete$ParkCode)
 SeriesBySiteInt(data= discrete, site="ACSTNL",parm= "pH")
 
 # static plot and you can add linear trend
-scattertimesite(data= discrete, site="ACSTNL",parm= "pH", trend ="N")
+scattertimesite(data= discrete, site="ACSTNL",parm= "pH", trend ="Y")
 
 ############## Plot time series per site in each park #####
 # option to add linear trend line
 #type = "" for all locationtypes; "stream" for streams; "lk_pnd" for lakes and ponds
 -
-scattertimepark(data= discrete,type = "",park="MABI",parm= "pH", trend ="Y")
+scattertimepark(data= discrete,type = "stream",park="ACAD",parm= "SpCond", trend ="N")
 
 ############## Boxplot showing current year monthly value vs past year's variation AT SITE LEVEL
 #curyr = current year
@@ -110,7 +110,7 @@ BivarSite(data=  discrete, site = "ACMRSL", x= "SpCond", y = "Temp_C", reg = "C"
 # select reg ="C" if you want to show correlation w/stats
 
 #### STILL IN PROGRESS, ALL OF THE STATS NEED TO BE UPDATED TO CALC PER SITE
-BivarPark(data=  discrete, park = "MORR", x= "SpCond", y = "Temp_C" , reg = "C")
+BivarPark(data=  discrete, type= "stream", park = "ACAD", x= "SpCond", y = "Temp_C" , reg = "N ")
 
 
 
@@ -169,13 +169,13 @@ levels(discrete$ParkCode)
 SeriesBySiteInt(data= discrete, site="ACSTNL",parm= "pH")
 
 # static plot and you can add linear trend
-scattertimesite(data= discrete, site="ACSTNL",parm= "pH", trend ="N")
+scattertimesite(data= discrete, site="ACSEAW",parm= "SpCond", trend ="N")
 
 ############## Plot time series per site in each park #####
 # option to add linear trend line
 #type = "" for all locationtypes; "stream" for streams; "lk_pnd" for lakes and ponds
 -
-scattertimepark(data= discrete,type = "",park="MABI",parm= "pH", trend ="Y")
+scattertimepark(data= discrete,type = "lk_pnd",park="ACAD",parm= "SpCond", trend ="N")
 
 ############## Boxplot showing current year monthly value vs past year's variation AT SITE LEVEL
 #curyr = current year
@@ -188,7 +188,7 @@ boxyrsiteQC(data= discrete, curyr= 2014,site="ROVASF",parm= "pH") ## autoscale t
 boxyrsite(data= discrete, curyr= 2014,site="ROVASF",parm= "pH")
 
 ############## Boxplot showing current year value vs past year's variation AT PARK LEVEL for all sites
-boxyrpark(data= discrete, curyr= 2014,park="MORR",parm= "pH")
+boxyrpark(data= discrete, curyr= 2014,park="ACAD",parm= "Temp_C")
 
 ############## Scatterplot showing current year value vs past year's AT indiv site
 
@@ -202,7 +202,7 @@ scattermonthpark(data= discrete, curyr= 2014,park="ROVA",parm= "pH")
 
 ### not plotting the trend right now (maybe too few points)
 
-TrendPerMonthsite(data= discrete, month = "10", site="ACABIN",parm= "Temp_C", trend = "N")
+TrendPerMonthsite(data= discrete, month = "05", site="ACABIN",parm= "Temp_C", trend = "N")
 
 
 ####### Plots trend in monthly value per site at park level ######
@@ -210,9 +210,9 @@ TrendPerMonthsite(data= discrete, month = "10", site="ACABIN",parm= "Temp_C", tr
 
 TrendPerMonthPark(data= discrete, month = "", park="MORR",parm= "pH", trend = "N")
 
-### Scatter plot of monthly values (colored by month) over time in each site at park level
+#### Scatter plot of monthly values (colored by month) over time at each site at park level ####
 
-ScatterPerMonthPark(data= discrete, month = "08", park="MORR",parm= "pH", trend = "N")
+ScatterPerMonthPark(data= discrete, month = "08", park="ACAD",parm= "pH", trend = "N")
 
 ####### Plots two variables against each other at a site wiht options to color by year and add stats ######
 # select reg ="LM" if you want to show regression stats of linear model
@@ -227,9 +227,8 @@ BivarSite(data=  discrete, site = "ACMRSL", x= "SpCond", y = "Temp_C", reg = "C"
 # select reg ="C" if you want to show correlation w/stats
 
 #### STILL IN PROGRESS, ALL OF THE STATS NEED TO BE UPDATED TO CALC PER SITE
-BivarPark(data=  discrete, park = "MORR", x= "SpCond", y = "Temp_C" , reg = "C")
+BivarPark(data=  discrete, type= "lk_pnd", park = "ACAD", x= "Discharge", y = "SpCond" , reg = "N")
 
 
 
 
->>>>>>> 5ab0224bae3915f4240d007b7724c301fe04a711

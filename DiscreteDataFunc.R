@@ -1,3 +1,5 @@
+## This functions connects to NETN's backend database and creates a flat file of the discrete data collected from the YSI (Profile data)
+
 NETN_discretedata<-function(x){
   library(RODBC)
   con <- odbcConnect("NETNWQ")# Connect to database that I named under USER DSN in ODBC Data Source Admin
@@ -48,12 +50,10 @@ NETN_discretedata<-function(x){
   temp3<-temp2a[,c( "ParkCode","LocationType","NETNCode","Description","SampType", "StartDate","Year" ,"Time","Depth_m", "Temp_C","SpCond" ,
                    "DO_mg.L","Do_sat" , "pH", "BP_mmHg","Discharge","TotalArea","TotalVel")]
   
-  
   levels(temp3$LocationType)
   temp3$Type[temp3$LocationType %in% "Stream"] = "stream"
   temp3$Type[!temp3$LocationType %in% "Stream"] = "lk_pnd"
-  
-  
+
   #head(temp3)
   #remove rows without site data
   temp3<-temp3[!is.na(temp3$Description) ,]
