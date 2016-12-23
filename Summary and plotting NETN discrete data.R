@@ -12,8 +12,8 @@ library(zoo)
 library(ggplot2)
 
 ###################### LOAD IN FUNCTIONS ###############################
-source("Theme.r")
-source("lm_eqn.r")
+source("Theme.R")
+source("lm_eqn.R")
 
 #######################LOAD IN NETN WQ DATA################################
 discrete <- read.csv("discreteNETN.csv")

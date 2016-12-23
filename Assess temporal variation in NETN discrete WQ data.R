@@ -14,8 +14,8 @@ library(ggplot2)
 library(nlme)
 
 ###################### LOAD IN FUNCTIONS ###############################
-source("Theme.r")
-source("lm_eqn.r")
+source("Theme.R")
+source("lm_eqn.R")
 
 #######################LOAD IN and RESHAPE NETN WQ DATA################################
 discrete <- read.csv("discreteNETN.csv")

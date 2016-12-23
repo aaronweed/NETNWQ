@@ -2,8 +2,8 @@
 ### These functions create various WQ plots for monthly discrete data collected by NETN.
 ### A Weed 8/25/2016; updated 11/5/2016
 
-
-###### plots a single WQ parmeter per month showing historical variation (boxplot) vs current value at site level ######
+######### Box plots ######
+## plots a single WQ parmeter per month showing historical variation (boxplot) vs current value at site level #
 boxyrsite<-function(data, curyr, site, parm){
   library(plyr)
   library(ggplot2)
@@ -117,8 +117,7 @@ boxyrsite<-function(data, curyr, site, parm){
   }
   
 }
-
-###### FOR QC: plots a single WQ parmeter per month showing historical variation (boxplot) vs current value at site level ######
+### FOR QC: plots a single WQ parmeter per month showing historical variation (boxplot) vs current value at site level ###
 
 boxyrsiteQC<-function(data, curyr, site, parm){
   library(plyr)
@@ -234,12 +233,12 @@ boxyrsiteQC<-function(data, curyr, site, parm){
   
 }
 
-####### plots a single WQ parmeter per month showing historical variation (boxplot) vs current value at park level ######
+##### plots a single WQ parmeter per month showing historical variation (boxplot) vs current value at park level ###
 
 boxyrpark<-function(data, curyr, park, parm){
   library(plyr)
   library(ggplot2)
-  library(reshape2)
+  library(reshape)
   sites <- read.csv("tblLocations.csv") ### import site metadata
   
   ######### Add in missing monthly obervations as NA
@@ -444,61 +443,35 @@ boxyrpark<-function(data, curyr, park, parm){
   
 }
 
-###### Interactive (HTML)plot: plots single WQ parmeter over time period at site level ######
+###### Interactive (HTML) plot: plots single WQ parmeter over time period at site level ######
 
 SeriesBySiteInt<-function(data, site, parm) {
   require(dygraphs)
-  library(reshape)
   library(zoo)
   library(xts)
-  
+  units<-read.csv("tlu_Units.csv") ## table with untis for plotting
   data<-data[data$NETNCode %in% site,]
   data<-droplevels(data)
-  data.raw<-data[c("Temp_C","DO_mg.L","SpCond","pH")]
+  data.raw<-data[,c("StartDate",parm)]
   time.raw <- as.POSIXct(data$StartDate, format = "%m/%d/%Y")
   series.raw<-xts(data.raw, order.by= time.raw)
-  #plot.zoo(series.raw)
+  #plot.zoo(series.raw$parm)
   #str(series.raw)
 
   ##### Create dynamic plot
 # raw data points
 
-if(parm == "Temp_C"){
- y<- dygraph(series.raw$Temp_C, main = site, xlab= "Date", ylab= "Temperature (C)")%>%
+ y<- dygraph(series.raw[,c(parm)], main = site, xlab= "Date", ylab= units$unit[units$parm %in% parm])%>%
   dyRangeSelector()%>%
-  dyOptions(drawPoints = TRUE, connectSeparatedPoints = FALSE, pointSize = 2)%>%
-    dySeries("Temp_C", label = "Temperature (C)")%>%
-    dyLegend(show = "always", labelsSeparateLines = T)
+  dyOptions(drawPoints = FALSE,  pointSize = 2)%>%
+    #dySeries(parm, label = units$unit[units$parm %in% parm])%>%
+    dyLegend(show = "always", hideOnMouseOut = FALSE)
   print(y)
-}
-  if(parm == "DO_mg.L"){
-    y<- dygraph(series.raw$DO_mg.L, main = site, xlab= "Date", ylab= "Dissolved Oxygen (mg/L)")%>%
-      dyRangeSelector()%>%
-      dyOptions(drawPoints = TRUE, connectSeparatedPoints = FALSE, pointSize = 2)%>%
-      dySeries("DO_mg.L", label = "Dissolved Oxygen (mg/L)")%>%
-      dyLegend(show = "always", labelsSeparateLines = T)
-    print(y)
-  }
-  if(parm == "SpCond"){
-    y<-dygraph(series.raw$SpCond, main = site, xlab= "Date", ylab= "Specific Conductance (mS/cm)")%>%
-      dyRangeSelector()%>%
-      dyOptions(drawPoints = TRUE, connectSeparatedPoints = FALSE, pointSize = 2)%>%
-      dySeries("SpCond", label = "Specific Conductance (mS/cm)")%>%
-      dyLegend(show = "always", labelsSeparateLines = T)
-    print(y)
-  }
-    
-    if(parm == "pH"){
-     y<- dygraph(series.raw$pH, main = site, xlab= "Date", ylab= "pH")%>%
-        dyRangeSelector()%>%
-        dyOptions(drawPoints = TRUE, connectSeparatedPoints = FALSE, pointSize = 2)%>%
-        dySeries("pH", label = "pH")%>%
-        dyLegend(show = "always", labelsSeparateLines = T)
-      print(y)
-      
-    }
+  
   }
   
+#### Scatter plots per month ##############
+
 scattermonthsite<-function(data, curyr, site, parm){
   library(plyr)
   library(ggplot2)
@@ -534,7 +507,7 @@ scattermonthsite<-function(data, curyr, site, parm){
   
   if(parm== "Temp_C"){
     ## Temperature per month
-    p <- ggplot(data[!data$Year %in% curyr,], aes(as.factor(month), Temp_C))+ labs(y = "Temperature (C)", x= "Month") + geom_point(colour = "black", size = 1) +ylim(0,32)### plots variation in previous Year's data
+    p <- ggplot(data[!data$Year %in% curyr,], aes(as.factor(month), data[,c(parm)]))+ labs(y = "Temperature (C)", x= "Month") + geom_point(colour = "black", size = 1) +ylim(0,32)### plots variation in previous Year's data
     
     p<- (p+facet_wrap(~Description)+  geom_jitter(data= data2[data2$Year %in% curyr,], width= 0.1, color="red", size=2)+ geom_hline(yintercept = 31, color ="blue") +
            theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
@@ -615,12 +588,14 @@ scattermonthsite<-function(data, curyr, site, parm){
   
 }
 
-###### Plots single WQ parmeter per month  per site at park level; current Year's value in red ######
+#### Scatter plots over time
+
+###### Plots single WQ parmeter per month  per site at park level; current Year's value in red ###
 
 scattermonthpark<-function(data, curyr, site,park, parm) {
   library(plyr)
   library(ggplot2)
-  library(reshape2)
+  library(reshape)
   sites <- read.csv("tblLocations.csv") ### import site metadata
   ######### Add in missing monthly obervations as NA
   # Create Year variable (can skip)
@@ -823,50 +798,31 @@ scattermonthpark<-function(data, curyr, site,park, parm) {
   }
 }
 
-###### Plots single WQ parmeter over time at park level ######
+###### Plots single WQ parmeter over time at park level ###
 
-scattertimesite<-function(data, site, parm, trend) {
+scattertimesite<-function(data, site, parm, trend, scale) {
   library(ggplot2)
   library(mgcv)
-  sites <- read.csv("tblLocations.csv") ### import site metadata
+  units<-read.csv("tlu_Units.csv") ## table with untis for plotting
   data<-data[data$NETNCode %in% site,]
   data<-droplevels(data)
   data$StartDate<-as.Date(data$StartDate, format= "%m/%d/%Y") #convert to StartDate
   data$month<-as.factor(format(data$StartDate,"%m")) #convert to month
   
-  if(parm== "Temp_C"){
-    ## Temperature per month
-    p <- ggplot(data, aes(StartDate, Temp_C))+ labs(y = "Temperature (C)", x= "Date") + geom_point(colour = "black", size = 2,na.rm=TRUE)
-    #+ geom_line(size=1 , color = "grey")
-        }
+  if(scale == "log"){
+  p <- ggplot(data, aes(StartDate, y = log(data[,c(parm)])))+ labs(y = paste("log", units$unit[units$parm %in% parm]), x= "Date") + geom_point(colour = "black", size = 1,na.rm=TRUE)
   
-  if(parm== "DO_mg.L"){
-    ## DO_mg.L per month
-    p <- ggplot(data, aes(StartDate, DO_mg.L))+ labs(y = "Dissolved Oxygen (mg/L)", x= "Month") + geom_point(colour = "black", size = 2,na.rm=TRUE)
-    #+ geom_line(size=1 , color = "grey")
-    }
+  }
+  if(scale == "norm"){
+    
+    p <- ggplot(data, aes(StartDate, y = data[,c(parm)]))+ labs(y = units$unit[units$parm %in% parm], x= "Date") + geom_point(colour = "black", size = 1,na.rm=TRUE)
+  }
   
-  if(parm== "SpCond"){
-    ## SpCond per month
-    p <- ggplot(data, aes(StartDate, SpCond))+ labs(y = expression("Specific Conductance (" * mu ~ "S/cm)"), x= "Date") + geom_point(colour = "black", size = 2,na.rm=TRUE)
-    #+ geom_line(size=1 , color = "grey")
-    }
   
-  if(parm== "pH"){
-    ## pH per month
-    p <- ggplot(data, aes(StartDate, pH))+ labs(y = "pH", x= "Date") + geom_point(colour = "black", size = 2,na.rm=TRUE)
-    #+ geom_line(size=1 , color = "grey")
-    }
-  
-  if(parm== "Discharge"){
-    ## Discharge per month
-    p <- ggplot(data, aes(StartDate, Discharge))+ labs(y = "Discharge (cu ft/s)", x= "Date") + geom_point(colour = "black", size = 2,na.rm=TRUE)
-    #+ geom_line(size=1 , color = "grey")
-    }
   
   if(trend == "Y"){
     
-    p<- (p+ facet_wrap(~Description, ncol=2, scales = "free_x") +
+    p<- (p+ facet_wrap(~Description, ncol=2, scales = "free_x") + scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
            geom_smooth(method= "lm", se= TRUE) +
            #geom_ribbon(aes( x = DT, ymin = Y.lci, ymax = Y.uci ), fill = 'gray80', alpha= 0.80) +
            theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
@@ -880,7 +836,7 @@ scattertimesite<-function(data, site, parm, trend) {
   }
   
   if(trend == "N"){
-    p<- (p+facet_wrap(~Description, ncol=2, scales = "free_x") +
+    p<- (p+facet_wrap(~Description, ncol=2, scales = "free_x") + scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
            theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
            theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
            theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
@@ -890,15 +846,15 @@ scattertimesite<-function(data, site, parm, trend) {
            theme(panel.background =  element_rect(fill="white", colour="black")) +
            theme(panel.grid.major = element_line(colour = "grey90"))+ggtitle(data$ParkCode[1]))
   }
-    print(p)
+  print(p)
 }
 
-###### Plots single WQ parmeter over time in each site at park level ######
+###### Plots single WQ parmeter over time in each site at park level ###
 
-scattertimepark<-function(data, type, park, parm, trend) {
+scattertimepark<-function(data, type, park, parm, trend, scale, overlay) {
   library(plyr)
   library(ggplot2)
-  library(reshape2)
+  library(reshape)
   library(zoo)
   library(xts)
   
@@ -907,70 +863,37 @@ scattertimepark<-function(data, type, park, parm, trend) {
   data$StartDate<-as.Date(data$StartDate, format= "%m/%d/%Y") #convert to StartDate
   
   if(type =="stream"){
-    data<-data[data$Type == "stream", ]
+    data<-data[data$LocationType == "Stream", ]
     data<-droplevels(data)
+    data<-data[,c("Description", "StartDate", parm)]
   }
   
   if(type =="lk_pnd"){
-    data<-data[data$Type == "lk_pnd", ]
+    data<-data[data$LocationType == "Lake" | data$LocationType == "Pond", ]
     data<-droplevels(data)
+    data<-data[,c("Description", "StartDate", parm)]
   }
   
-  ## sort prior to plotting
-  data<-data[order(data$Description,data$Year),]
-  
-  if(parm== "Temp_C"){
-    ## Temperature per month
-    p <- ggplot(data, aes(StartDate, Temp_C))+ labs(y = "Temperature (C)", x= "Date") 
-    #+ geom_line(size=1 , color = "grey")+ylim(0,31)
-    
-  }
-  
-  if(parm== "DO_mg.L"){
-    ## DO_mg.L per month
-    p <- ggplot(data, aes(StartDate, DO_mg.L))+ labs(y = "Dissolved Oxygen (mg/L)", x= "Date")
-    #+ geom_line(size=1 , color = "grey")
-    
-  }
-  
-  if(parm== "SpCond"){
-    ## SpCond per month
-    p <- ggplot(data, aes(StartDate, SpCond))+ labs(y = expression("Specific Conductance (" * mu ~ "S/cm)"), x= "Date") 
-    
-  }
-  
-  if(parm== "pH"){
-    ## pH per month
-    p <- ggplot(data, aes(StartDate, pH))+ labs(y = "pH", x= "Date")
-    #+ geom_line(size=1 , color = "grey")
+  if(overlay =="N"){
+    if(scale == "log"){
+    p <- ggplot(data, aes(StartDate, y = log(data[,c(parm)])))+ labs(y = paste("log", units$unit[units$parm %in% parm]), x= "Date") + geom_point(colour = "black", size = 1,na.rm=TRUE)
+      }
+  if(scale == "norm"){
+    p <- ggplot(data, aes(StartDate, y = data[,c(parm)]))+ labs(y = units$unit[units$parm %in% parm], x= "Date") + geom_point(colour = "black", size = 1,na.rm=TRUE)
   }
     
-  if(parm== "Discharge"){
-    ## Discharge per month
-    p <- ggplot(data, aes(StartDate, Discharge))
-  }
-  
-  if(park== "ACAD"){
-    
-    p<- p + geom_point(colour = "black", size = 1,na.rm=TRUE)
-  }else{
-    
-    p<- p + geom_point(colour = "black", size = 2,na.rm=TRUE)
-  }
-  
     if(trend == "Y"){
       
       if(park== "ACAD"){
         
-        p<- (p+facet_wrap(~Description, ncol=3, scales = "fixed") + geom_point(colour = "black", size = 1,na.rm=TRUE) +
+        p<- (p+facet_wrap(~Description, ncol=3, scales = "fixed") + geom_point(colour = "black", size = 1.5,na.rm=TRUE) +
+               scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
                geom_smooth(method= "lm", se= TRUE) +
                theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
                theme(axis.text.x = element_text(angle = 90,  vjust=0,size = 16 * 0.8)) +
                theme(strip.text.x= element_text(size=9, face=c("bold.italic"))) +
                theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
                theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-               theme(legend.position = "top") +
-               theme(legend.key = element_rect(fill = "white", color = "white")) +
                theme(panel.background =  element_rect(fill="white", colour="black")) +
                theme(panel.grid.major = element_line(colour = "grey90")))
         print(p)
@@ -979,13 +902,13 @@ scattertimepark<-function(data, type, park, parm, trend) {
       {
       
       p<- (p+ facet_wrap(~Description, ncol=2, scales = "free") + 
+             scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
               geom_smooth(method= "lm", se= TRUE) +
                theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
                theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
                theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
                theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
                theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-               theme(legend.key = element_rect(fill = "white", color = "black")) +
                theme(panel.background =  element_rect(fill="white", colour="black")) +
                theme(panel.grid.major = element_line(colour = "grey90")))
         
@@ -999,6 +922,7 @@ scattertimepark<-function(data, type, park, parm, trend) {
         
         p<- (p+facet_wrap(~Description, ncol=3, scales = "fixed") + geom_point(colour = "black", size = 1,na.rm=TRUE) +
                theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
+               scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
                theme(axis.text.x = element_text(angle = 90,  vjust=0,size = 16 * 0.8)) +
                theme(strip.text.x= element_text(size=9, face=c("bold.italic"))) +
                theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
@@ -1013,6 +937,7 @@ scattertimepark<-function(data, type, park, parm, trend) {
       {
      
         p<- (p+ facet_wrap(~Description, ncol=2, scales = "free") + 
+               scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
                theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
                theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
                theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
@@ -1025,14 +950,62 @@ scattertimepark<-function(data, type, park, parm, trend) {
         print(p)
       }
     }
-}    
+  }
+  
+  if(overlay =="Y"){
+    if(scale == "log"){
+    p <- ggplot(data, aes(StartDate, y = log(data[,c(parm)]), colour=Description))+ labs(y = paste("log", units$unit[units$parm %in% parm]), x= "Date") + geom_point( size = 1.5,na.rm=TRUE)
+    
+    }
+    if(scale == "norm"){
+      
+      p <- ggplot(data, aes(StartDate, y = data[,c(parm)], colour=Description))+ labs(y = units$unit[units$parm %in% parm], x= "Date") + geom_point( size = 1.5,na.rm=TRUE)
+    }  
+    
+    if(trend == "Y"){
+      
+      p<- (p+ 
+               scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+               geom_smooth(method= "lm", se= TRUE) +
+               theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
+               theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
+               theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
+               theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
+               theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
+               theme(legend.position = "top", legend.title = element_blank()) +  
+               theme(legend.key = element_rect(fill = "white", color = "white")) +
+               theme(panel.background =  element_rect(fill="white", colour="black")) +
+               theme(panel.grid.major = element_line(colour = "grey90")))
+        
+        print(p)
+      }
+    
+    if(trend == "N"){
+        
+        p<- (p+  
+               scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+               theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
+               theme(axis.text.x = element_text(angle = 0,  vjust=0,size = 16 * 0.8)) +
+               theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
+               theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
+               theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
+               theme(legend.position = "top", legend.title = element_blank()) + 
+               theme(legend.key = element_rect(fill = "white", color = "white")) +
+               theme(panel.background =  element_rect(fill="white", colour="black")) +
+               theme(panel.grid.major = element_line(colour = "grey90")))
+        
+        print(p)
+      }
+    }
+  }
+   
 
 ###### Plots trend in monthly value per site  ######
 
 TrendPerMonthsite<-function(data, month, site, parm, trend){
   library(plyr)
   library(ggplot2)
-  library(reshape2)
+  library(reshape)
   sites <- read.csv("tblLocations.csv") ### import site metadata
   ######### Add in missing monthly obervations as NA
   # Create Year variable (can skip)
@@ -1121,12 +1094,12 @@ TrendPerMonthsite<-function(data, month, site, parm, trend){
   
 }
 
-###### Plots trend in monthly value per site at park level ######
+###### Plots trend in monthly value per site at park level ###
 
 TrendPerMonthPark<-function(data, month, park, parm, trend){
   library(plyr)
   library(ggplot2)
-  library(reshape2)
+  library(reshape)
   sites <- read.csv("tblLocations.csv") ### import site metadata
   ######### Add in missing monthly obervations as NA
   # Create Year variable (can skip)
@@ -1260,12 +1233,12 @@ TrendPerMonthPark<-function(data, month, park, parm, trend){
    
 }
 
-##### Scatter plot of monthly values (colored by month) over time in each site at park level #####
+##### Scatter plot of monthly values (colored by month) over time in each site at park level ##
 
 ScatterPerMonthPark<-function(data, month, park, parm, trend){
   library(plyr)
   library(ggplot2)
-  library(reshape2)
+  library(reshape)
   sites <- read.csv("tblLocations.csv") ### import site metadata
   ######### Add in missing monthly obervations as NA
   # Create Year variable (can skip)
@@ -1416,13 +1389,14 @@ BivarSite<-function(data, site, x, y, reg){
   
   library(plyr)
   library(ggplot2)
-  library(reshape2)
+  library(reshape)
   sites <- read.csv("tblLocations.csv") ### import site metadata
-  
+  units<-read.csv("tlu_Units.csv") ## table with untis for plotting
   ######### Add in missing monthly obervations as NA
   # Create Year variable (can skip)
   data$StartDate<-as.Date(data$StartDate, format= "%m/%d/%Y") #convert to StartDate
-  data$month<-as.factor(format(data$StartDate,"%m")) #convert to month
+  data$Year<-as.factor(format(data$StartDate,"%Y")) #extract Year
+  data$month<-as.factor(format(data$StartDate,"%m")) #extract month
   
   ## create molten data frame (all values are represented for each site*time combination)
   discrete.melt<-melt(data, id.vars=c("NETNCode" ,"StartDate", "Year" ,"month" ), measure.vars=names(data[, sapply(data, is.numeric)]))
@@ -1460,8 +1434,8 @@ BivarSite<-function(data, site, x, y, reg){
   
   if(reg == "M"){
     
-    p <- ggplot(data2, aes(x= data2[,c(x)], y = data2[,c(y)])) +  geom_point(size = 2,na.rm=TRUE) + 
-      labs(y = y, x= x)  
+    p <- ggplot(data2, aes(x= data2[,c(x)], y = data2[,c(y)])) +  geom_point(size = 2,na.rm=TRUE) + labs(y = units$unit[units$parm %in% y], x= units$unit[units$parm %in% x]) 
+        
     p<- (p+  facet_wrap(~Description, ncol=2, scales = "free") + ggtitle(data$ParkCode[1])+ 
            #annotate("text", x= min(data2[,c(x)], na.rm= TRUE)+ 0.3*max(data2[,c(x)], na.rm= TRUE), y= max(data2[,c(y)], na.rm= TRUE)- 0.2*min(data2[,c(x)], na.rm= TRUE) , label = paste("Adj R2 = ",signif(summary(fit)$adj.r.squared, 3),
            #"Intercept =",signif(fit$coef[[1]],3 )," Slope =",signif(fit$coef[[2]], 3)," P =",signif(summary(fit)$coef[2,4], 2))) +
@@ -1480,8 +1454,8 @@ BivarSite<-function(data, site, x, y, reg){
     
   if(reg == "LM"){
     
-    p <- ggplot(data2, aes(x= data2[,c(x)], y = data2[,c(y)])) +  geom_point(size = 2,na.rm=TRUE) + 
-      labs(colour = "Year", y = y, x= x)  
+    p <- ggplot(data2, aes(x= data2[,c(x)], y = data2[,c(y)])) +  geom_point(size = 2,na.rm=TRUE) + labs(y = units$unit[units$parm %in% y], x= units$unit[units$parm %in% x]) 
+    
     
     p<- (p+  facet_wrap(~Description, ncol=2, scales = "free") + ggtitle(data$ParkCode[1])+ 
            geom_smooth(method = "lm", se= TRUE)+  
@@ -1501,8 +1475,8 @@ BivarSite<-function(data, site, x, y, reg){
   
   if(reg == "C"){
     
-    p <- ggplot(data2, aes(x= data2[,c(x)], y = data2[,c(y)], colour =factor(Year))) +  geom_point(size = 2,na.rm=TRUE) + 
-      labs(colour = "Year", y = y, x= x)  
+    p <- ggplot(data2, aes(x= data2[,c(x)], y = data2[,c(y)], colour =factor(Year))) +  geom_point(size = 2,na.rm=TRUE)+ labs(y = units$unit[units$parm %in% y], x= units$unit[units$parm %in% x]) 
+    
     
     p<- (p+  facet_wrap(~Description, ncol=2, scales = "free") + ggtitle(data$ParkCode[1])+ 
            annotate("text", x= min(data2[,c(x)], na.rm= TRUE)+ 0.5*max(data2[,c(x)], na.rm= TRUE), y= max(data2[,c(y)], na.rm= TRUE)- 0.1*min(data2[,c(x)], na.rm= TRUE) , label = paste("r = ",signif(corr$estimate, 3),
@@ -1522,8 +1496,8 @@ BivarSite<-function(data, site, x, y, reg){
   
   if(reg == "N"){
     
-    p <- ggplot(data2, aes(x= data2[,c(x)], y = data2[,c(y)], colour =factor(Year))) +  geom_point(size = 2,na.rm=TRUE) + 
-      labs(colour = "Year", y = y, x= x)
+    p <- ggplot(data2, aes(x= data2[,c(x)], y = data2[,c(y)], colour =factor(Year))) +  geom_point(size = 2,na.rm=TRUE) + labs(y = units$unit[units$parm %in% y], x= units$unit[units$parm %in% x]) 
+    
     
     p<- (p+facet_wrap(~Description, ncol=2, scales = "free") + ggtitle(data$ParkCode[1])+  
            theme(axis.text.y = element_text(color="black", vjust= 0.5,size = 16 * 0.8,face="bold"))+
@@ -1548,20 +1522,22 @@ BivarPark<-function(data, type, park, x, y, reg){
   library(ggplot2)
   library(reshape)
   sites <- read.csv("tblLocations.csv") ### import site metadata
-  
+  units<-read.csv("tlu_Units.csv") ## table with untis for plotting
   ######### Add in missing monthly obervations as NA
   # Create Year variable (can skip)
   data$StartDate<-as.Date(data$StartDate, format= "%m/%d/%Y") #convert to StartDate
-  data$month<-as.factor(format(data$StartDate,"%m")) #convert to month
+  data$Year<-as.factor(format(data$StartDate,"%Y")) #extract Year
+  data$month<-as.factor(format(data$StartDate,"%m")) #extract month
+  
   
   ## select water body type
   if(type =="stream"){
-    data<-data[data$Type == "stream", ]
+    data<-data[data$LocationType == "Stream", ]
     data<-droplevels(data)
   }
   
   if(type =="lk_pnd"){
-    data<-data[data$Type == "lk_pnd", ]
+    data<-data[data$LocationType == "Lake" |data$LocationType == "Pond" , ]
     data<-droplevels(data)
   }
   
@@ -1594,9 +1570,10 @@ BivarPark<-function(data, type, park, x, y, reg){
   
   ## sort prior to plotting
   data2<-data2[order(data2$Description,data2$Year),]
-  ## fit linear model to data at each site
-  temp<-dlply(data2, .(NETNCode), function(d) lm(data2[,c(y)] ~ data2[,c(x)], data = data2, na.action=na.omit))
   
+  # ## fit linear model to data at each site
+  # temp<-dlply(data2, .(NETNCode), function(d) lm(data2[,c(y)] ~ data2[,c(x)], data = data2, na.action=na.omit))
+  # 
   # covenience function to extract model coefs
   # linmod<-function(m) { 
   #   cf <- coef(m)
@@ -1616,8 +1593,8 @@ BivarPark<-function(data, type, park, x, y, reg){
   
   if(reg == "M"){
     
-    p <- ggplot(data2, aes(x= data2[,c(x)], y = data2[,c(y)])) +  geom_point(size = 2,na.rm=TRUE) + 
-      labs(y = y, x= x)  
+    p <- ggplot(data2, aes(x= data2[,c(x)], y = data2[,c(y)])) +  geom_point(size = 2,na.rm=TRUE) + labs(y = units$unit[units$parm %in% y], x= units$unit[units$parm %in% x]) 
+    
     
     
     if(park== "ACAD"){
@@ -1629,7 +1606,7 @@ BivarPark<-function(data, type, park, x, y, reg){
              theme(strip.text.x= element_text(size=9, face=c("bold.italic"))) +
              theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
              theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-             theme(legend.position = "top") +
+             theme(legend.position = "top", legend.title = element_blank()) +
              theme(legend.key = element_rect(fill = "white", color = "white")) +
              theme(panel.background =  element_rect(fill="white", colour="black")) +
              theme(panel.grid.major = element_line(colour = "grey90")))
@@ -1648,6 +1625,7 @@ BivarPark<-function(data, type, park, x, y, reg){
            theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
            theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
            theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
+           theme(legend.position = "top", legend.title = element_blank()) +
            theme(legend.key = element_rect(fill = "white", color = "white")) +
            theme(panel.background =  element_rect(fill="white", colour="black")) +
            theme(panel.grid.major = element_line(colour = "grey90")))
@@ -1658,8 +1636,8 @@ BivarPark<-function(data, type, park, x, y, reg){
   
   if(reg == "LM"){
     
-    p <- ggplot(data2, aes(x= data2[,c(x)], y = data2[,c(y)])) +  geom_point(size = 2,na.rm=TRUE) + 
-      labs(colour = "Year", y = y, x= x)  
+    p <- ggplot(data2, aes(x= data2[,c(x)], y = data2[,c(y)])) +  geom_point(size = 2,na.rm=TRUE) + labs(y = units$unit[units$parm %in% y], x= units$unit[units$parm %in% x]) 
+    
     
     if(park== "ACAD"){
       
@@ -1670,7 +1648,7 @@ BivarPark<-function(data, type, park, x, y, reg){
              theme(strip.text.x= element_text(size=9, face=c("bold.italic"))) +
              theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
              theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-             theme(legend.position = "top") +
+             theme(legend.position = "top", legend.title = element_blank()) +
              theme(legend.key = element_rect(fill = "white", color = "white")) +
              theme(panel.background =  element_rect(fill="white", colour="black")) +
              theme(panel.grid.major = element_line(colour = "grey90")))
@@ -1688,6 +1666,7 @@ BivarPark<-function(data, type, park, x, y, reg){
            theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
            theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
            theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
+           theme(legend.position = "top", legend.title = element_blank()) +
            theme(legend.key = element_rect(fill = "white", color = "white")) +
            theme(panel.background =  element_rect(fill="white", colour="black")) +
            theme(panel.grid.major = element_line(colour = "grey90")))
@@ -1698,8 +1677,8 @@ BivarPark<-function(data, type, park, x, y, reg){
   
   if(reg == "C"){
     
-    p <- ggplot(data2, aes(x= data2[,c(x)], y = data2[,c(y)], colour =factor(Year))) +  geom_point(size = 2,na.rm=TRUE) + 
-      labs(colour = "Year", y = y, x= x)  
+    p <- ggplot(data2, aes(x= data2[,c(x)], y = data2[,c(y)], colour =factor(Year))) +  geom_point(size = 2,na.rm=TRUE) + labs(y = units$unit[units$parm %in% y], x= units$unit[units$parm %in% x]) 
+    
     
     if(park== "ACAD"){
       
@@ -1711,7 +1690,7 @@ BivarPark<-function(data, type, park, x, y, reg){
              theme(strip.text.x= element_text(size=9, face=c("bold.italic"))) +
              theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
              theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-             theme(legend.position = "top") +
+             theme(legend.position = "top", legend.title = element_blank()) +
              theme(legend.key = element_rect(fill = "white", color = "white")) +
              theme(panel.background =  element_rect(fill="white", colour="black")) +
              theme(panel.grid.major = element_line(colour = "grey90")))
@@ -1728,6 +1707,7 @@ BivarPark<-function(data, type, park, x, y, reg){
            theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
            theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
            theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
+           theme(legend.position = "top", legend.title = element_blank()) +
            theme(legend.key = element_rect(fill = "white", color = "white")) +
            theme(panel.background =  element_rect(fill="white", colour="black")) +
            theme(panel.grid.major = element_line(colour = "grey90")))
@@ -1739,8 +1719,8 @@ BivarPark<-function(data, type, park, x, y, reg){
   
   if(reg == "N"){
     
-    p <- ggplot(data2, aes(x= data2[,c(x)], y = data2[,c(y)], colour =factor(Year))) +  geom_point(size = 2,na.rm=TRUE) + 
-      labs(colour = "Year", y = y, x= x)
+    p <- ggplot(data2, aes(x= data2[,c(x)], y = data2[,c(y)], colour =factor(Year))) +  geom_point(size = 2,na.rm=TRUE) + labs(y = units$unit[units$parm %in% y], x= units$unit[units$parm %in% x]) 
+    
     
     if(park== "ACAD"){
       
@@ -1750,7 +1730,7 @@ BivarPark<-function(data, type, park, x, y, reg){
              theme(strip.text.x= element_text(size=9, face=c("bold.italic"))) +
              theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
              theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
-             theme(legend.position = "top") +
+             theme(legend.position = "top", legend.title = element_blank()) +
              theme(legend.key = element_rect(fill = "white", color = "white")) +
              theme(panel.background =  element_rect(fill="white", colour="black")) +
              theme(panel.grid.major = element_line(colour = "grey90")))
@@ -1765,6 +1745,7 @@ BivarPark<-function(data, type, park, x, y, reg){
            theme(strip.text.x= element_text(size=12, face=c("bold.italic"))) +
            theme(axis.title.x =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
            theme(axis.title.y =element_text(size = 12, face ="bold", vjust= 1, debug=F))+
+           theme(legend.position = "top", legend.title = element_blank()) +
            theme(legend.key = element_rect(fill = "white", color = "white")) +
            theme(panel.background =  element_rect(fill="white", colour="black")) +
            theme(panel.grid.major = element_line(colour = "grey90")))  
