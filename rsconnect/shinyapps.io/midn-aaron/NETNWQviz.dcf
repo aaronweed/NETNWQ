@@ -1,0 +1,10 @@
+name: NETNWQviz
+account: midn-aaron
+server: shinyapps.io
+appId: 146971
+bundleId: 658806
+url: https://midn-aaron.shinyapps.io/NETNWQviz/
+when: 1482439512.24262
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: AllLakeSurfaceData.xlsx|AllNETNStreamMeasurements.xlsx|allWQparms.csv|Assess temporal variation in NETN discrete WQ data.R|Chemistry_DataFunc.R|Core_Metrics_For_Visualization_20151106.xlsx|discrete_NETN_allparms.csv|DiscreteDataFunc.R|discreteNETN.csv|LakePondQueryRelates.jpg|lakes.csv|lm_eqn.R|month.csv|NETN_core_metrics_flatfile_upthru2014.xlsx|NETN_discrete_samps.csv|NETN_Lk_Surf_DataFunc.R|NETN_nutrient.csv|NETN_WQ plotting functions.R|NETN_WQ_discrete_summary.pptx|NETNWQdataimport.R|output NETN data to NCRN R products.R|panel_cor.R|README.md|scattertimesite_JP.R|simple_dygraph.html|Summary and plotting NETN discrete data.R|tblLocations.csv|temp3.csv|test.R|Theme.r|tlu_Units.csv|two_series_dygraph.html|waterseriesAW.R|WQ discrete monthly reporting.R|MIDN files/BOWA_contin vs discrete_hists.pdf|MIDN files/calc Mann_Kendall trend test.R|MIDN files/corr_plot_ALL points_Discrete.pdf|MIDN files/dis_DO_wide.csv|MIDN files/dis_pH_wide.csv|MIDN files/dis_SpC_wide.csv|MIDN files/dis_temp_wide.csv|MIDN files/discrete.csv|MIDN files/FRSP18_Tavg_power_curve.tiff|MIDN files/hist_SD_discrete_parms.tiff|MIDN files/import and examin continuous data.R|MIDN files/import and examin discrete data.R|MIDN files/IMport, creat, and plot , time series of discrete water quality.R|MIDN files/Mean change Power analysis for discretet WQ SOP FY 2015.R|MIDN files/min_det_slope_function.R|MIDN files/overly histograms water quality.R|MIDN files/panel_corr_function.R|MIDN files/power_function_slope.R|MIDN files/R_Kendall_package.pdf|MIDN files/Regression power analysis discrete_FINAL.R|MIDN files/Regression Power analysis for discretet WQ SOP FY 2015.R|MIDN files/SD_max.csv|MIDN files/SD_mean.csv|MIDN files/SD_min.csv|MIDN files/WQ_site_locations.csv|MIDN files/WQ_site_locations.zip
